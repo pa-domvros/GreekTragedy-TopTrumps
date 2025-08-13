@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Τραγικοί Ήρωες – Smartboard (GR, 2/σειρά, Εικόνες, Με Μεταδεδομένα)</title>
+<style>
+  /* ===== Θέμα Light Cinnamon ===== */
+  :root{
+    --bg1:#fff6ed; --bg2:#ffe9d2; --ink:#2a1a12; --ink-soft:#553b2b;
+    --tile1:#f6d9bf; --tile2:#f4caa5; --tile3:#ffd9b3; --tile4:#f0b78e; --tile5:#eebf99; --tile6:#f3c7a6;
+    --card:#fffdf9; --stat-bg:#fbe7d6; --stat-brd:#efcdb1;
+    --accent:#c57a36; --accent-strong:#9d5b22; --gold:#d59a4a; --ok:#268c4f; --warn:#b87a13; --danger:#b6463e;
+    --panel:rgba(255, 250, 244, .85); --panel-brd:#f2d7bf;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,sans-serif; color:var(--ink);
+    background:radial-gradient(1200px 800px at 80% -10%, var(--bg2) 0%, var(--bg1) 60%), linear-gradient(180deg, #fffaf3, var(--bg1));
+  }
+  .wrap{max-width:1320px;margin:0 auto;padding:16px}
+  h1{margin:0 0 6px;font-size:28px;letter-spacing:.3px}
+  .sub{color:var(--ink-soft);margin-bottom:8px}
+  .credit-inline{
+    margin:6px 0 14px;text-align:center;font-weight:800;color:#6b3f20;background:#fff7ea;border:1px solid #edc9a9;padding:8px 12px;border-radius:12px
+  }
+  .panel{background:var(--panel);border:1px solid var(--panel-brd);border-radius:16px;padding:12px;backdrop-filter:blur(6px)}
+
+  /* Έλεγχοι */
+  .controls{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:1100px){.controls{grid-template-columns:1.1fr 2fr 1fr}}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .pill{display:inline-flex;align-items:center;gap:8px;background:#fffaf2;border:1px solid var(--panel-brd);padding:6px 10px;border-radius:999px;color:var(--ink)}
+  .btn, select, input[type="text"]{font-size:16px;padding:10px 12px;border-radius:12px;border:1px solid var(--panel-brd);background:#fffaf2;color:var(--ink)}
+  .btn{cursor:pointer}
+  .btn.primary{background:var(--gold);color:#2b1900;border:none;font-weight:800}
+  .btn.warn{background:#ffd585;color:#3a2600;border:none;font-weight:800}
+  .btn.danger{background:#ffd4cf;color:#4b0e0a;border:1px solid #f3a39b;font-weight:800}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .teamcount{display:inline-flex;align-items:center;gap:6px;background:#fffdf8;border:1px solid var(--panel-brd);border-radius:999px;padding:4px 8px}
+  .teamcount button{width:36px;height:36px;border-radius:10px}
+  .teamcount select{appearance:none;background:transparent;border:none;color:#2a1a12;font-weight:800;padding:6px 8px;outline:none;cursor:pointer}
+
+  /* Info */
+  .info-btn{position:fixed; right:16px; top:16px; width:50px; height:50px; border-radius:50%; background:var(--accent); color:#fff; font-weight:900; border:none; cursor:pointer; box-shadow:0 8px 18px rgba(0,0,0,.15); z-index:100}
+  .info-btn:hover{ background:var(--accent-strong) }
+  .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:99; }
+  .modal.open{ display:flex; }
+  .backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.25); }
+  .sheet{ position:relative; max-width:900px; max-height:80vh; overflow:auto; background:#fffdf9; color:var(--ink); border:2px solid var(--panel-brd); border-radius:18px; padding:18px; box-shadow:0 20px 40px rgba(0,0,0,.25) }
+  .sheet h2{ margin:6px 0 8px } .sheet h3{ margin:12px 0 6px } .sheet ul{ margin:6px 0 12px 20px }
+  .closeX{ position:absolute; top:8px; right:8px; width:40px; height:40px; border-radius:50%; border:1px solid var(--panel-brd); background:#fffaf2; color:#2a1a12; font-size:20px; font-weight:900; cursor:pointer }
+
+  /* Διάταξη */
+  .layout{margin-top:12px;display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:1100px){.layout{grid-template-columns:1fr 320px}}
+  .potbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .legend{display:flex;gap:8px;flex-wrap:wrap}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#fffdf8;border:1px solid var(--panel-brd);font-size:14px;color:var(--ink)}
+
+  /* === Board: 2 κάρτες ανά σειρά (πάντα πάνω από 700px) === */
+  .board{
+    display:grid;
+    grid-template-columns:1fr;   /* πολύ στενές οθόνες: 1 στήλη */
+    gap:12px;
+  }
+  @media(min-width:700px){
+    .board{ grid-template-columns:repeat(2, minmax(0, 1fr)); } /* 2 στήλες */
+  }
+
+  /* Πλακίδια Ομάδων */
+  .teambox{position:relative;padding-top:38px;border-radius:16px;overflow:hidden;border:1px solid #e9cdb4;box-shadow:0 8px 20px rgba(0,0,0,.15); min-height:320px}
+  .teamhdr{position:absolute;top:6px;left:8px;right:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-radius:12px;background:#fffdf9;color:var(--ink);border:1px solid var(--panel-brd);font-weight:900;font-size:14px}
+  .hdr-left{display:flex;align-items:center;gap:8px}
+  .countBig{font-weight:900;padding:2px 10px;border-radius:999px;background:#fff7ea;color:#4a2c1a;border:1px solid #edc9a9}
+  .turn{outline:3px solid var(--gold);outline-offset:3px}
+  .out{opacity:.35;filter:grayscale(.3)}
+
+  .card{margin:10px;background:var(--card);color:var(--ink);border-radius:18px;padding:12px;min-height:270px;box-shadow:0 6px 18px rgba(0,0,0,.12);display:grid;grid-template-rows:auto auto 1fr;gap:8px;border:1px solid #edd4bb}
+  .card-title{font-weight:900;font-size:20px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .title-left{display:flex;align-items:center;gap:10px}
+
+  /* Μικρο-εικονίδιο: καρφίτσωμα στο πάνω μέρος, κόψιμο από κάτω */
+  .thumb{
+    width:42px;height:42px;border-radius:8px;flex:0 0 auto;
+    background:#f0e0d1 top center/cover no-repeat; /* crop κάτω */
+    border:1px solid #e3c6ac; box-shadow:0 2px 6px rgba(0,0,0,.12)
+  }
+
+  /* Μεταδεδομένα (συγγραφέας — έργο) */
+  .char-block{display:flex;flex-direction:column}
+  .char-name{font-weight:900;line-height:1}
+  .char-meta{font-size:.9em;color:#6b3e2e;margin-top:2px}
+
+  .tag{display:none} /* δεν χρησιμοποιούμε πλέον "set" tag */
+
+  /* === Στατιστικά === */
+  .stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  @media(max-width:900px){
+    .stats{ grid-template-columns:1fr; } /* σε πιο στενά, 1 στήλη */
+  }
+  .stat{border:1px solid var(--stat-brd);border-radius:12px;padding:10px;display:flex;justify-content:space-between;gap:8px;background:var(--stat-bg);font-weight:800;cursor:pointer;min-height:40px}
+  .stat span{line-height:1.2}
+  .stat.active{background:var(--accent);color:#fff;border-color:var(--accent-strong)}
+  .stat.winner{outline:3px solid var(--ok)}
+  .card-back{margin:10px;min-height:270px;border-radius:18px;background:linear-gradient(135deg,#fff2e1,#fffdf9);display:grid;place-items:center;color:#5a1f08;font-weight:900;box-shadow:0 6px 18px rgba(0,0,0,.12);border:1px solid #edd4bb}
+  .foot{font-size:12px;color:#6b3f2b}
+
+  /* Πλάτες καρτών με εικόνα (χωρίς όνομα), crop από κάτω */
+  .card-back.imgback{
+    background-size: cover;
+    background-position: top center;   /* crop κάτω */
+    background-repeat: no-repeat;
+    position: relative;
+  }
+
+  .winner,.tie{padding:10px 12px;border-radius:12px;font-weight:800}
+  .winner{background:#e9f8ef;border:1px solid #bfe7ce;color:#124d2d}
+  .tie{background:#fff6db;border:1px solid #f1d991;color:#6b4a0d}
+
+  .side{display:grid;gap:10px}
+  .side h3{margin:0;font-size:16px;color:var(--ink)}
+  .catbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .catbtns button{background:var(--accent);color:#fff;border:1px solid var(--accent-strong);border-radius:12px;padding:10px;font-weight:900;cursor:pointer}
+
+  .log{margin-top:6px;height:110px;overflow:auto;background:#fffaf2;border:1px solid var(--panel-brd);border-radius:10px;padding:8px;font-size:12px;color:var(--ink)}
+  .scoreboard{display:grid;gap:8px}
+  .scoreRow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fffdf8;border:1px solid var(--panel-brd);border-radius:12px;padding:8px}
+  .scoreLeft{display:flex;align-items:center;gap:10px}
+  .swatch{width:18px;height:18px;border-radius:4px;border:1px solid #dcb792}
+  .pill{font-weight:900;background:#fff7ea;border:1px solid #edc9a9;border-radius:999px;padding:4px 10px;color:#2a1a12}
+
+  footer{margin:16px auto 24px;max-width:1320px;text-align:center;font-weight:800;color:#6b3f20;background:#fff7ea;border:1px solid #edc9a9;padding:12px;border-radius:12px}
+</style>
+</head>
+<body>
+<button class="info-btn" id="infoBtn" aria-label="Οδηγίες">i</button>
+
+<div class="wrap">
+  <h1>Τραγικοί Ήρωες – Παιχνίδι Συγκρίσεων</h1>
+  <div class="sub">Ροή: <b>Έναρξη → επιλογή κατηγορίας → Αποκάλυψη & Σύγκριση → Επόμενος γύρος</b>. Ο πίνακας δείχνει πόσες κάρτες κρατά κάθε ομάδα.</div>
+  <div class="credit-inline">✨✍️ Devised by Panagiotis Domvros, English and Drama Teacher, All Rights Reserved ✍️✨</div>
+
+  <!-- Έλεγχοι -->
+  <div class="panel controls">
+    <div class="row">
+      <div class="pill">
+        <strong>Ομάδες</strong>
+        <span class="teamcount">
+          <button class="btn" id="decTeams" title="Λιγότερες">−</button>
+          <select id="teamCount" title="Πλήθος ομάδων">
+            <option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option>
+          </select>
+          <button class="btn" id="incTeams" title="Περισσότερες">+</button>
+        </span>
+      </div>
+      <button class="btn" id="randomizeColors">Ανάμειξη Χρωμάτων</button>
+    </div>
+
+    <div class="row" id="teamEdit"></div>
+
+    <div class="row" style="justify-content:flex-end;">
+      <button class="btn warn" id="importBtn">Εισαγωγή Τράπουλας (JSON)</button>
+      <input type="file" id="fileInput" accept=".json" style="display:none" />
+      <button class="btn primary" id="startBtn">Έναρξη</button>
+      <button class="btn danger" id="resetBtn">Επαναφορά</button>
+    </div>
+  </div>
+
+  <!-- Διάταξη -->
+  <div class="layout">
+
+    <!-- Αριστερά: Σκηνή -->
+    <div class="panel">
+      <div class="potbar">
+        <div class="legend">
+          <span class="badge">Ενεργή ομάδα:</span>
+          <strong id="activeTeamName">—</strong>
+        </div>
+        <div class="legend">
+          <span class="badge">Στοίβα <strong id="potCount">0</strong></span>
+          <span class="badge">Εκτός Τράπουλας <strong id="unusedCount">0</strong></span>
+          <span class="badge">Γύρος <strong id="roundNum">0</strong></span>
+          <span class="badge">Μέγεθος Τράπουλας <strong id="deckSize">25</strong></span>
+        </div>
+      </div>
+
+      <div class="board" id="teamsArea"></div>
+
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <div id="status" class="winner" style="display:none;"></div>
+        <div id="statusTie" class="tie" style="display:none;"></div>
+        <button id="revealBtn" class="btn primary" disabled>Αποκάλυψη & Σύγκριση</button>
+        <button id="nextBtn" class="btn" disabled>Επόμενος Γύρος</button>
+      </div>
+
+      <div class="log" id="logBox"></div>
+    </div>
+
+    <!-- Δεξιά: Κατηγορίες + Σκορ -->
+    <div class="panel side">
+      <h3>Επιλογή κατηγορίας</h3>
+      <div class="catbtns" id="categoryButtons"></div>
+
+      <h3 style="margin-top:8px;">Πίνακας Σκορ</h3>
+      <div class="scoreboard" id="scoreboard"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal Οδηγιών -->
+<div class="modal" id="infoModal" aria-hidden="true" role="dialog">
+  <div class="backdrop" id="infoBackdrop"></div>
+  <div class="sheet" role="document" aria-label="Οδηγίες">
+    <button class="closeX" id="infoClose" aria-label="Κλείσιμο">×</button>
+    <h2>Πώς παίζεται – Τραγικοί Ήρωες</h2>
+    <p>Σχολική, smartboard-friendly εκδοχή παιχνιδιού σύγκρισης. Στόχος: να κερδίσεις κάρτες επιλέγοντας την ισχυρότερη κατηγορία στην κορυφαία σου κάρτα.</p>
+
+    <h3>Στήσιμο</h3>
+    <ul>
+      <li>Διάλεξε <b>2–6 ομάδες</b> και (αν θέλεις) άλλαξε ονόματα.</li>
+      <li>Προαιρετικά: <b>Εισαγωγή Τράπουλας (JSON)</b> για δικές σου κάρτες.</li>
+      <li>Πάτησε <b>Έναρξη</b>. Οι κάρτες ανακατεύονται και μοιράζονται ισόποσα. <b>Μία κάρτα μπορεί να μείνει «εκτός»</b> (εκτός αν είναι 5 ομάδες).</li>
+    </ul>
+
+    <h3>Ροή γύρου</h3>
+    <ol>
+      <li>Η <b>ενεργή ομάδα</b> βλέπει τη δική της κορυφαία κάρτα (οι άλλες είναι κλειστές).</li>
+      <li>Επιλέγει <b>κατηγορία</b> πάνω στην κάρτα ή με τα κουμπιά δεξιά.</li>
+      <li>Πάτησε <b>Αποκάλυψη & Σύγκριση</b>: ανοίγουν όλες και συγκρίνουμε. Η υψηλότερη τιμή <b>κερδίζει</b>. <b>Ισοπαλία;</b> Οι κάρτες πάνε στη <b>Στοίβα</b>.</li>
+      <li>Πάτησε <b>Επόμενος Γύρος</b>. Ο νικητής επιλέγει την επόμενη κατηγορία.</li>
+    </ol>
+
+    <h3>Κουμπιά & UI</h3>
+    <ul>
+      <li><b>Ομάδες –/+/λίστα:</b> ορισμός 2–6 ομάδων.</li>
+      <li><b>Ανάμειξη Χρωμάτων:</b> αλλάζει τα χρώματα των πλακιδίων.</li>
+      <li><b>Εισαγωγή Τράπουλας (JSON):</b> φόρτωση δικών σου καρτών.</li>
+      <li><b>Έναρξη:</b> μοιράζει και ξεκινά Γύρο 1.</li>
+      <li><b>Επαναφορά:</b> επιστροφή στην προεπιλεγμένη τράπουλα.</li>
+      <li><b>Αποκάλυψη & Σύγκριση / Επόμενος Γύρος</b>.</li>
+      <li><b>Στοίβα / Εκτός Τράπουλας / Γύρος / Μέγεθος Τράπουλας</b>: δείκτες στην κορυφή.</li>
+    </ul>
+  </div>
+</div>
+
+<footer>✨✍️ Devised by Panagiotis Domvros, English and Drama Teacher, All Rights Reserved ✍️✨</footer>
+
+<script>
+/* ===== Τράπουλα 25 καρτών: Αρχαία Ελληνική Τραγωδία =====
+   Κατηγορίες (0–100): Φρόνηση, Ανδρεία, ΤραγικόΠεπρωμένο, Έρως, Δόλος, Επιρροή
+   Περιλαμβάνει: name, author, play, stats
+*/
+var DEFAULT_DECK = [
+  { name:"Οιδίπους", author:"Σοφοκλής", play:"Οιδίπους Τύραννος", stats:{ Φρόνηση:90, Ανδρεία:75, ΤραγικόΠεπρωμένο:100, Έρως:40, Δόλος:20, Επιρροή:95 } },
+  { name:"Ιοκάστη", author:"Σοφοκλής", play:"Οιδίπους Τύραννος", stats:{ Φρόνηση:72, Ανδρεία:60, ΤραγικόΠεπρωμένο:95,  Έρως:65, Δόλος:25, Επιρροή:70 } },
+  { name:"Τειρεσίας", author:"Σοφοκλής", play:"Οιδίπους Τύραννος", stats:{ Φρόνηση:98, Ανδρεία:55, ΤραγικόΠεπρωμένο:70,  Έρως:20, Δόλος:15, Επιρροή:86 } },
+
+  { name:"Αντιγόνη", author:"Σοφοκλής", play:"Αντιγόνη", stats:{ Φρόνηση:85, Ανδρεία:92, ΤραγικόΠεπρωμένο:90,  Έρως:55, Δόλος:10, Επιρροή:88 } },
+  { name:"Κρέων", author:"Σοφοκλής", play:"Αντιγόνη", stats:{ Φρόνηση:70, Ανδρεία:80, ΤραγικόΠεπρωμένο:85,  Έρως:30, Δόλος:35, Επιρροή:90 } },
+
+  { name:"Αίας", author:"Σοφοκλής", play:"Αίας", stats:{ Φρόνηση:65, Ανδρεία:96, ΤραγικόΠεπρωμένο:90,  Έρως:20, Δόλος:10, Επιρροή:80 } },
+  { name:"Τέκμησσα", author:"Σοφοκλής", play:"Αίας", stats:{ Φρόνηση:75, Ανδρεία:70, ΤραγικόΠεπρωμένο:82,  Έρως:60, Δόλος:15, Επιρροή:66 } },
+
+  { name:"Φιλοκτήτης", author:"Σοφοκλής", play:"Φιλοκτήτης", stats:{ Φρόνηση:82, Ανδρεία:78, ΤραγικόΠεπρωμένο:88,  Έρως:28, Δόλος:12, Επιρροή:74 } },
+  { name:"Νεοπτόλεμος", author:"Σοφοκλής", play:"Φιλοκτήτης", stats:{ Φρόνηση:72, Ανδρεία:85, ΤραγικόΠεπρωμένο:78,  Έρως:30, Δόλος:18, Επιρροή:70 } },
+
+  { name:"Ηρακλής", author:"Σοφοκλής", play:"Τραχίνιαι", stats:{ Φρόνηση:68, Ανδρεία:98, ΤραγικόΠεπρωμένο:80,  Έρως:35, Δόλος:15, Επιρροή:88 } },
+  { name:"Δηιάνειρα", author:"Σοφοκλής", play:"Τραχίνιαι", stats:{ Φρόνηση:74, Ανδρεία:60, ΤραγικόΠεπρωμένο:85,  Έρως:65, Δόλος:20, Επιρροή:70 } },
+
+  { name:"Ηλέκτρα", author:"Σοφοκλής", play:"Ηλέκτρα", stats:{ Φρόνηση:82, Ανδρεία:78, ΤραγικόΠεπρωμένο:85,  Έρως:40, Δόλος:30, Επιρροή:74 } },
+
+  { name:"Αγαμέμνων", author:"Αισχύλος", play:"Αγαμέμνων", stats:{ Φρόνηση:76, Ανδρεία:88, ΤραγικόΠεπρωμένο:90,  Έρως:35, Δόλος:25, Επιρροή:85 } },
+  { name:"Κλυταιμνήστρα", author:"Αισχύλος", play:"Αγαμέμνων", stats:{ Φρόνηση:86, Ανδρεία:70, ΤραγικόΠεπρωμένο:88,  Έρως:50, Δόλος:97, Επιρροή:92 } },
+  { name:"Κασσάνδρα", author:"Αισχύλος", play:"Αγαμέμνων", stats:{ Φρόνηση:92, Ανδρεία:62, ΤραγικόΠεπρωμένο:95,  Έρως:30, Δόλος:15, Επιρροή:80 } },
+
+  { name:"Προμηθέας", author:"Αισχύλος", play:"Προμηθέας Δεσμώτης", stats:{ Φρόνηση:98, Ανδρεία:88, ΤραγικόΠεπρωμένο:85,  Έρως:25, Δόλος:20, Επιρροή:92 } },
+
+  { name:"Μήδεια", author:"Ευριπίδης", play:"Μήδεια", stats:{ Φρόνηση:88, Ανδρεία:82, ΤραγικόΠεπρωμένο:92,  Έρως:60, Δόλος:98, Επιρροή:90 } },
+  { name:"Ιάσων", author:"Ευριπίδης", play:"Μήδεια", stats:{ Φρόνηση:78, Ανδρεία:75, ΤραγικόΠεπρωμένο:80,  Έρως:45, Δόλος:60, Επιρροή:72 } },
+
+  { name:"Διόνυσος", author:"Ευριπίδης", play:"Βάκχες", stats:{ Φρόνηση:94, Ανδρεία:70, ΤραγικόΠεπρωμένο:60,  Έρως:55, Δόλος:85, Επιρροή:95 } },
+  { name:"Πενθέας", author:"Ευριπίδης", play:"Βάκχες", stats:{ Φρόνηση:72, Ανδρεία:82, ΤραγικόΠεπρωμένο:90,  Έρως:25, Δόλος:20, Επιρροή:76 } },
+
+  { name:"Ιφιγένεια", author:"Ευριπίδης", play:"Ιφιγένεια εν Αυλίδι", stats:{ Φρόνηση:84, Ανδρεία:72, ΤραγικόΠεπρωμένο:92,  Έρως:45, Δόλος:10, Επιρροή:78 } },
+  { name:"Ορέστης", author:"Ευριπίδης", play:"Ορέστης", stats:{ Φρόνηση:80, Ανδρεία:83, ΤραγικόΠεπρωμένο:88,  Έρως:38, Δόλος:35, Επιρροή:82 } },
+
+  { name:"Ιππόλυτος", author:"Ευριπίδης", play:"Ιππόλυτος", stats:{ Φρόνηση:78, Ανδρεία:82, ΤραγικόΠεπρωμένο:88,  Έρως:30, Δόλος:10, Επιρροή:72 } },
+  { name:"Φαίδρα", author:"Ευριπίδης", play:"Ιππόλυτος", stats:{ Φρόνηση:70, Ανδρεία:58, ΤραγικόΠεπρωμένο:92,  Έρως:85, Δόλος:25, Επιρροή:68 } },
+  { name:"Θησέας", author:"Ευριπίδης", play:"Ιππόλυτος", stats:{ Φρόνηση:75, Ανδρεία:88, ΤραγικόΠεπρωμένο:80,  Έρως:35, Δόλος:20, Επιρροή:74 } }
+];
+
+/* ===== Χρήσιμα ===== */
+var TILE_COLORS=[ getVar('--tile1'), getVar('--tile2'), getVar('--tile3'), getVar('--tile4'), getVar('--tile5'), getVar('--tile6') ];
+function getVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=(Math.random()*(i+1))|0;var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function el(id){return document.getElementById(id)}
+function log(msg){var lb=el('logBox'); lb.innerHTML += msg+"<br/>"; lb.scrollTop = lb.scrollHeight;}
+
+/* ===== Φόρτωση εικόνων (πλάτες & thumbnails) ===== */
+var imageMap = {}; // name -> url ή null
+function preloadCardBackImages(){
+  imageMap = {};
+  for(var i=0;i<deck.length;i++){
+    (function(card){
+      var name = card.name;
+      var url  = encodeURIComponent(name) + ".jpg";
+      var img  = new Image();
+      img.onload  = function(){ imageMap[name] = url; };
+      img.onerror = function(){ imageMap[name] = null; };
+      img.src = url;
+    })(deck[i]);
+  }
+}
+
+/* ===== Κατάσταση ===== */
+var deck=[], categoryKeys=[];
+var numTeams=4, teams=[], activeTeam=0, pot=[], roundNum=0, revealed=false, chosenCategory=null, inPlay=false;
+var unused=[];
+
+/* ===== Στοιχεία DOM ===== */
+var teamCountEl=el('teamCount'), decBtn=el('decTeams'), incBtn=el('incTeams'), teamEditEl=el('teamEdit');
+var startBtn=el('startBtn'), resetBtn=el('resetBtn'), importBtn=el('importBtn'), fileInput=el('fileInput'), randomBtn=el('randomizeColors');
+var activeTeamNameEl=el('activeTeamName'), potCountEl=el('potCount'), roundNumEl=el('roundNum'), deckSizeEl=el('deckSize'), unusedEl=el('unusedCount');
+var teamsAreaEl=el('teamsArea'), categoryButtonsEl=el('categoryButtons');
+var revealBtn=el('revealBtn'), nextBtn=el('nextBtn'), statusEl=el('status'), statusTieEl=el('statusTie'), scoreboardEl=el('scoreboard');
+var infoBtn=el('infoBtn'), infoModal=el('infoModal'), infoClose=el('infoClose'), infoBackdrop=el('infoBackdrop');
+
+/* ===== UI Builders ===== */
+function rebuildTeamEditors(){
+  teamEditEl.innerHTML='';
+  for(var i=0;i<numTeams;i++){
+    var wrap=document.createElement('div'); wrap.className='pill';
+    var sw=document.createElement('span'); sw.className='swatch'; sw.style.background=TILE_COLORS[i%TILE_COLORS.length];
+    var input=document.createElement('input'); input.type='text'; input.placeholder='Ομάδα '+(i+1); input.value=(teams[i]&&teams[i].name)||('Ομάδα '+(i+1));
+    input.oninput=(function(ix,inp){return function(){ if(teams[ix]) teams[ix].name=inp.value||('Ομάδα '+(ix+1)); renderHUD(); renderScoreboard(); };})(i,input);
+    wrap.appendChild(sw); wrap.appendChild(input); teamEditEl.appendChild(wrap);
+  }
+}
+function buildCategoryButtons(){
+  categoryButtonsEl.innerHTML='';
+  for(var i=0;i<categoryKeys.length;i++){
+    (function(k){
+      var b=document.createElement('button'); b.textContent=k;
+      b.onclick=function(){ selectCategory(k); };
+      categoryButtonsEl.appendChild(b);
+    })(categoryKeys[i]);
+  }
+}
+
+/* ===== Rendering ===== */
+function renderHUD(){
+  activeTeamNameEl.textContent = inPlay ? (teams[activeTeam]?teams[activeTeam].name:'—') : '—';
+  potCountEl.textContent = pot.length; roundNumEl.textContent = roundNum; deckSizeEl.textContent = deck.length; unusedEl.textContent = unused.length;
+}
+function statDiv(key, value, clickable){
+  var st=document.createElement('div'); st.className='stat'; if(clickable) st.title='Επιλογή: '+key;
+  var s1=document.createElement('span'); s1.textContent=key; var s2=document.createElement('span'); s2.textContent=value;
+  st.appendChild(s1); st.appendChild(s2); return st;
+}
+function renderTeams(){
+  teamsAreaEl.innerHTML='';
+  for(var idx=0; idx<teams.length; idx++){
+    var team=teams[idx];
+    var box=document.createElement('div'); box.className='teambox';
+    box.style.background = TILE_COLORS[idx%TILE_COLORS.length];
+    box.style.backgroundImage = 'linear-gradient(180deg, rgba(255,255,255,.25), rgba(0,0,0,.05))';
+    if(inPlay && idx===activeTeam) box.classList.add('turn'); if(team.hand.length===0) box.classList.add('out');
+
+    var hdr=document.createElement('div'); hdr.className='teamhdr';
+    var left=document.createElement('div'); left.className='hdr-left';
+    var name=document.createElement('span'); name.textContent=team.name;
+    left.appendChild(name);
+    var cnt=document.createElement('span'); cnt.className='countBig'; cnt.textContent=team.hand.length+' κάρτες';
+    hdr.appendChild(left); hdr.appendChild(cnt);
+
+    var inner=document.createElement('div'); var topId=team.hand[0];
+
+    if(team.hand.length===0){
+      var back=document.createElement('div'); back.className='card-back'; back.textContent='Τέλος'; inner.appendChild(back);
+    } else {
+      if(!revealed && idx!==activeTeam){
+        var back2=document.createElement('div');
+        var cTop  = deck[topId];
+        var imgUrl = imageMap[cTop.name];
+        if(imgUrl){
+          back2.className = 'card-back imgback';
+          back2.style.backgroundImage = "url('"+imgUrl+"')";
+        } else {
+          back2.className = 'card-back';
+          back2.innerHTML = '<div style="text-align:center;"><div style="font-size:24px;font-weight:900;">Τραγικοί Ήρωες</div><div class="foot">Πλάτη Κάρτας</div></div>';
+        }
+        inner.appendChild(back2);
+      } else {
+        var c=deck[topId]; var card=document.createElement('div'); card.className='card';
+
+        /* === Τίτλος με μικρο-εικονίδιο + μεταδεδομένα === */
+        var title=document.createElement('div'); title.className='card-title';
+        var tl=document.createElement('div'); tl.className='title-left';
+        var thumb=document.createElement('div'); thumb.className='thumb';
+        var faceUrl = imageMap[c.name];
+        if(faceUrl){ thumb.style.backgroundImage = "url('"+faceUrl+"')"; }
+        tl.appendChild(thumb);
+
+        var cb=document.createElement('div'); cb.className='char-block';
+        var nm=document.createElement('div'); nm.className='char-name'; nm.textContent=c.name;
+        var meta=document.createElement('div'); meta.className='char-meta'; meta.textContent=(c.author||'') + (c.play?(' — '+c.play):'');
+        cb.appendChild(nm); cb.appendChild(meta);
+        tl.appendChild(cb);
+
+        title.appendChild(tl);
+        /* δεν χρειαζόμαστε tag δεξιά */
+
+        var stats=document.createElement('div'); stats.className='stats';
+        for(var ki=0;ki<categoryKeys.length;ki++){
+          var key=categoryKeys[ki]; var st=statDiv(key, c.stats[key], idx===activeTeam && !revealed);
+          if(idx===activeTeam && !revealed){ (function(k,el){ el.onclick=function(){ selectCategory(k); }; })(key, st); }
+          if(chosenCategory===key) st.classList.add('active');
+          stats.appendChild(st);
+        }
+        var foot=document.createElement('div'); foot.className='foot';
+        foot.textContent = (!revealed ? (idx===activeTeam?'Πάτησε κατηγορία για επιλογή':'Κρυφό έως την αποκάλυψη') : '');
+
+        card.appendChild(title); card.appendChild(stats); card.appendChild(foot); inner.appendChild(card);
+      }
+    }
+
+    box.appendChild(hdr); box.appendChild(inner); teamsAreaEl.appendChild(box);
+  }
+}
+function renderScoreboard(){
+  scoreboardEl.innerHTML='';
+  for(var i=0;i<teams.length;i++){
+    var row=document.createElement('div'); row.className='scoreRow';
+    var left=document.createElement('div'); left.className='scoreLeft';
+    var sw=document.createElement('span'); sw.className='swatch'; sw.style.background=TILE_COLORS[i%TILE_COLORS.length];
+    var name=document.createElement('strong'); name.textContent=teams[i].name;
+    left.appendChild(sw); left.appendChild(name);
+    var right=document.createElement('div');
+    var cards=document.createElement('span'); cards.className='pill'; cards.textContent='Κάρτες: '+teams[i].hand.length;
+    right.appendChild(cards);
+    row.appendChild(left); row.appendChild(right);
+    scoreboardEl.appendChild(row);
+  }
+}
+function renderAll(){ renderHUD(); renderTeams(); renderScoreboard(); revealBtn.disabled = !inPlay || !chosenCategory || revealed; nextBtn.disabled = !inPlay || !revealed; }
+
+/* ===== Ροή παιχνιδιού ===== */
+function applyTeamCount(){
+  numTeams = parseInt(teamCountEl.value,10)||4; if(numTeams<2) numTeams=2; if(numTeams>6) numTeams=6; teamCountEl.value = String(numTeams);
+  while(teams.length<numTeams) teams.push({name:'Ομάδα '+(teams.length+1), hand:[]}); teams = teams.slice(0,numTeams);
+  rebuildTeamEditors();
+}
+function startGame(){
+  if(numTeams<2){alert('Χρειάζονται τουλάχιστον 2 ομάδες');return;}
+  teams=[]; var inputs=teamEditEl.querySelectorAll('input');
+  for(var i=0;i<numTeams;i++){ var nm=inputs[i]?inputs[i].value:('Ομάδα '+(i+1)); teams.push({name:nm||('Ομάδα '+(i+1)), hand:[]}); }
+
+  var ids=[]; for(var d=0; d<deck.length; d++) ids.push(deck[d]._id);
+  var shuffled=shuffle(ids);
+  var remainder = shuffled.length % numTeams;   // με 25, για 5 ομάδες -> 0, αλλιώς -> 1
+  var dealCount = shuffled.length - remainder;  // αφήνουμε 0 ή 1 εκτός
+  var dealIds = shuffled.slice(0, dealCount);
+  unused = shuffled.slice(dealCount);
+
+  for(var k=0;k<dealIds.length;k++){ teams[k % numTeams].hand.push(dealIds[k]); }
+
+  activeTeam=0; pot=[]; roundNum=1; revealed=false; chosenCategory=null; inPlay=true;
+  statusEl.style.display='none'; statusTieEl.style.display='none';
+  log('Έναρξη με '+numTeams+' ομάδες. Εκτός τράπουλας: '+unused.length+'.');
+  renderAll();
+}
+function resetGame(){
+  deck=[]; for(var i=0;i<DEFAULT_DECK.length;i++){ var c=DEFAULT_DECK[i]; deck.push({ name:c.name, author:c.author, play:c.play, stats:c.stats, _id:i }); }
+  categoryKeys=Object.keys(deck[0].stats);
+  preloadCardBackImages();
+  applyTeamCount();
+  activeTeam=0; pot=[]; roundNum=0; revealed=false; chosenCategory=null; inPlay=false; unused=[];
+  statusEl.style.display='none'; statusTieEl.style.display='none'; el('logBox').innerHTML='';
+  buildCategoryButtons();
+  renderAll();
+  log('Επαναφορά. Μέγεθος τράπουλας: '+deck.length+'.');
+}
+function nextRound(){
+  var alive=teams.filter(function(t){return t.hand.length>0;});
+  if(alive.length<=1){ inPlay=false; statusEl.style.display='block'; statusEl.textContent='🏁 Τέλος παιχνιδιού! Νικητής: '+(alive[0]?alive[0].name:'—'); nextBtn.disabled=true; log('Τέλος.'); return; }
+  revealed=false; chosenCategory=null; statusEl.style.display='none'; statusTieEl.style.display='none'; roundNum++; renderAll();
+  log('Γύρος '+roundNum+'. Επιλογή: '+teams[activeTeam].name);
+}
+
+/* ===== Λογική γύρου ===== */
+function selectCategory(cat){
+  if(!inPlay || revealed) return;
+  chosenCategory = cat; log('Επιλέχθηκε κατηγορία: '+cat+'. Πάτησε «Αποκάλυψη & Σύγκριση».'); renderAll();
+}
+function revealAndResolve(){
+  if(!inPlay || !chosenCategory || revealed) return;
+  revealed = true;
+
+  var plays = teams.map(function(t){ return t.hand.length ? t.hand[0] : null; });
+  var maxVal=-Infinity, winners=[];
+  for(var i=0;i<plays.length;i++){
+    var id=plays[i]; if(id==null) continue;
+    var val=deck[id].stats[chosenCategory];
+    if(val>maxVal){ maxVal=val; winners=[i]; } else if(val===maxVal){ winners.push(i); }
+  }
+  var roundCards=plays.filter(function(x){return x!=null;});
+
+  if(winners.length===1){
+    for(var t=0;t<teams.length;t++){ if(teams[t].hand.length) teams[t].hand.shift(); }
+    var w=winners[0]; var won=pot.concat(roundCards); pot=[];
+    teams[w].hand=teams[w].hand.concat(won);
+    activeTeam=w;
+    statusEl.style.display='block'; statusEl.textContent='✅ Νίκη για '+teams[w].name+' με '+chosenCategory+' = '+maxVal+'.';
+    statusTieEl.style.display='none'; log(teams[w].name+' πήρε '+won.length+' κάρτες.');
+  } else {
+    for(var t2=0;t2<teams.length;t2++){ if(teams[t2].hand.length){ var top=teams[t2].hand.shift(); pot.push(top); } }
+    statusEl.style.display='none'; statusTieEl.style.display='block';
+    statusTieEl.textContent='🤝 Ισοπαλία στο '+chosenCategory+' (τιμή '+maxVal+'). Κάρτες → Στοίβα. Ίδια ομάδα επιλέγει ξανά.';
+    log('Ισοπαλία. Στοίβα τώρα: '+pot.length+' κάρτες.');
+  }
+
+  renderAll();
+  // οπτική επισήμανση νικητή
+  var teamBoxes = el('teamsArea').children;
+  for(var ti=0; ti<teams.length; ti++){
+    if(!teamBoxes[ti]) continue;
+    var id=plays[ti]; if(id==null) continue;
+    var card = teamBoxes[ti].querySelector('.card'); if(!card) continue;
+    var cells = card.querySelectorAll('.stat');
+    for(var ci=0; ci<categoryKeys.length; ci++){
+      var key=categoryKeys[ci];
+      if(key===chosenCategory && winners.indexOf(ti)>-1){ cells[ci].classList.add('winner'); }
+    }
+  }
+
+  nextBtn.disabled=false;
+}
+
+/* ===== Συνδέσεις ===== */
+teamCountEl.onchange = function(){ applyTeamCount(); };
+decBtn.onclick = function(){ teamCountEl.value = String(Math.max(2, (parseInt(teamCountEl.value,10)||4) - 1)); applyTeamCount(); };
+incBtn.onclick = function(){ teamCountEl.value = String(Math.min(6, (parseInt(teamCountEl.value,10)||4) + 1)); applyTeamCount(); };
+
+randomBtn.onclick=function(){ TILE_COLORS = shuffle(TILE_COLORS); renderTeams(); renderScoreboard(); };
+startBtn.onclick=startGame; resetBtn.onclick=resetGame; nextBtn.onclick=nextRound; el('revealBtn').onclick=revealAndResolve;
+
+importBtn.onclick=function(){ fileInput.click(); };
+fileInput.onchange=function(e){
+  var f=e.target.files && e.target.files[0]; if(!f) return;
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var arr=JSON.parse(reader.result);
+      if(!Array.isArray(arr) || !arr.length || !arr[0].stats) throw new Error('Μη έγκυρο JSON τράπουλας');
+      /* υποστηρίζουμε είτε νέα (author/play) είτε παλιά (set) δομή */
+      deck=[];
+      for(var i=0;i<arr.length;i++){
+        var it=arr[i];
+        deck.push({
+          name:it.name,
+          author:it.author || it.set || '',
+          play:it.play || '',
+          stats:it.stats,
+          _id:i
+        });
+      }
+      categoryKeys=Object.keys(deck[0].stats);
+      preloadCardBackImages();
+      buildCategoryButtons();
+      renderAll();
+      alert('Η τράπουλα φορτώθηκε. Πάτησε «Έναρξη».');
+      log('Custom τράπουλα: '+deck.length+' κάρτες.');
+    }catch(err){ alert('Αποτυχία εισαγωγής: '+err.message); }
+    fileInput.value='';
+  };
+  reader.readAsText(f);
+};
+
+/* Modal Οδηγιών */
+infoBtn.onclick = function(){ infoModal.classList.add('open'); infoModal.setAttribute('aria-hidden','false'); };
+infoClose.onclick = function(){ infoModal.classList.remove('open'); infoModal.setAttribute('aria-hidden','true'); };
+infoBackdrop.onclick = infoClose;
+
+/* ===== Init ===== */
+(function init(){
+  deck=[]; for(var i=0;i<DEFAULT_DECK.length;i++){ var c=DEFAULT_DECK[i]; deck.push({ name:c.name, author:c.author, play:c.play, stats:c.stats, _id:i }); }
+  categoryKeys=Object.keys(deck[0].stats);
+  preloadCardBackImages();
+  applyTeamCount();
+  buildCategoryButtons();
+  renderAll();
+  log('Έτοιμο. Βάλε εικόνες (π.χ. Οιδίπους.jpg, Μήδεια.jpg) στον ίδιο φάκελο και πάτησε «Έναρξη».');
+})();
+</script>
+</body>
+</html>
